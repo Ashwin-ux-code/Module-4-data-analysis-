@@ -1,0 +1,147 @@
+---
+title: "Module 4 Data Analysis"
+author: "Ashwin"
+date: "2025-09-25"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Introduction
+In this report, I analyse shark catch data from the Queensland Shark Control Program (QFISH).  
+The dataset summarises the number of sharks caught by area and calendar year.  
+The aim of this analysis is to create a tidy dataset and produce a time-series plot that can be used for management and community reporting.
+
+---
+
+# Part 1: Data acquisition
+- Data source: Queensland Government QFISH database  
+- Dataset selected: *Shark Control Program – Number caught by area, calendar year and species group*  
+- Exported as CSV and stored in my repository under `data/`.
+
+
+
+```{r}
+library(tidyverse)
+
+```
+
+```{r}
+# Import the raw data
+raw_data <- read_csv("Data/Qfishdata.csv")
+
+```
+
+
+Part 2: Tidy the data
+
+We focus only on shark records, with catches summarised by Area and Year.4
+
+```{r}
+
+# 2. First row contains species groups (Mammal, Other, Shark, Turtle, Total)
+#    Extract those labels and build proper column names
+categories <- raw_data[1, -1] |> as.character()
+year_cols <- names(raw_data)[-1]
+
+# Create a dataframe with multi-index-like names: Year.Category
+colnames(raw_data) <- c("Area", paste(year_cols, categories, sep = "_"))
+
+# 3. Drop the first row (species header row)
+raw_data <- raw_data[-1, ]
+
+# 4. Keep only Shark columns
+shark_cols <- c("Area", grep("_Shark$", names(raw_data), value = TRUE))
+shark_data <- raw_data[ , shark_cols]
+
+# 5. Reshape to tidy format
+shark_tidy <- shark_data |>
+  pivot_longer(
+    cols = -Area,
+    names_to = "Year",
+    values_to = "Shark"
+  ) |>
+  # Extract just the year number from e.g. "2001_Shark"
+  mutate(
+    Year = str_extract(Year, "^[0-9]{4}") |> as.integer(),
+    Shark = as.numeric(Shark)
+  )
+
+# 6. Remove Grand Total row and replace NAs with 0
+shark_tidy <- shark_tidy |>
+  filter(Area != "Grand Total") |>
+  mutate(Shark = replace_na(Shark, 0))
+
+# Inspect cleaned dataset
+head(shark_tidy)
+
+```
+
+Part 3: Exploratory analysis and plotting
+
+We now develop a time-series plot showing shark catches over time, separated by region.
+
+```{r}
+ggplot(shark_tidy, aes(x = Year, y = Shark, colour = Area)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  labs(
+    title = "Shark catches by area (2001–2025)",
+    x = "Year",
+    y = "Number of sharks caught",
+    colour = "Region"
+  ) +
+  theme_minimal()
+
+```
+
+For better visual comprehenssion I have decided to use R , to make geographical representation of the data using the maps package .
+
+```{r}
+
+library(maps)
+
+# Example: assign approximate lat/lon coordinates to SCP areas
+area_coords <- tribble(
+  ~Area,                 ~lat,    ~lon,
+  "Bribie Island",      -27.07, 153.15,
+  "Bundaberg",          -24.87, 152.35,
+  "Cairns",             -16.92, 145.78,
+  "Capricorn Coast",    -23.13, 150.73,
+  "Gladstone",          -23.85, 151.25,
+  "Gold Coast",         -28.02, 153.40,
+  "Mackay",             -21.14, 149.18,
+  "Nth Stradbroke Is.", -27.50, 153.53,
+  "Rainbow Beach",      -25.91, 153.09,
+  "Sunshine Coast North",-26.40, 153.10,
+  "Sunshine Coast South",-26.75, 153.13,
+  "Townsville",         -19.26, 146.82
+)
+
+# Filter shark data for a single year (e.g. 2020)
+shark2020 <- shark_tidy %>% filter(Year == 2020)
+
+# Merge shark catches with coordinates
+shark_map <- left_join(shark2020, area_coords, by = "Area")
+
+# Base world map from ggplot2
+world <- map_data("world")
+
+# Plot
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group),
+               fill = "grey90", colour = "white") +
+  geom_point(data = shark_map,
+             aes(x = lon, y = lat, size = Shark, colour = Shark),
+             alpha = 0.7) +
+  scale_size_continuous(range = c(2, 12)) +
+  scale_colour_viridis_c() +
+  coord_fixed(xlim = c(140, 155), ylim = c(-30, -10)) +
+  labs(title = "Shark catches by area (2020)",
+       x = "Longitude", y = "Latitude",
+       size = "Sharks", colour = "Sharks") +
+  theme_minimal()
+
+```

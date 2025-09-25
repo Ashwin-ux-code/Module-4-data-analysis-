@@ -37,7 +37,7 @@ raw_data <- read_csv("Data/Qfishdata.csv")
 
 Part 2: Tidy the data
 
-We focus only on shark records, with catches summarised by Area and Year.4
+We focus only on shark records, with catches summarised by Area and Year.
 
 ```{r}
 
@@ -97,13 +97,13 @@ ggplot(shark_tidy, aes(x = Year, y = Shark, colour = Area)) +
 
 ```
 
-For better visual comprehenssion I have decided to use R , to make geographical representation of the data using the maps package .
+For better visual comprehenssion I have decided to use R , to make geographical representation of the data for the year 2020 using the maps package .
 
 ```{r}
 
 library(maps)
 
-# Example: assign approximate lat/lon coordinates to SCP areas
+#  Assign approximate lat/lon coordinates to SCP areas
 area_coords <- tribble(
   ~Area,                 ~lat,    ~lon,
   "Bribie Island",      -27.07, 153.15,
@@ -145,3 +145,35 @@ ggplot() +
   theme_minimal()
 
 ```
+
+```{r}
+
+
+
+# Filter shark data for a single year (e.g. 2020)
+shark2010 <- shark_tidy %>% filter(Year == 2010)
+
+# Merge shark catches with coordinates
+shark_map <- left_join(shark2010, area_coords, by = "Area")
+
+# Base world map from ggplot2
+world <- map_data("world")
+
+# Plot
+ggplot() +
+  geom_polygon(data = world, aes(x = long, y = lat, group = group),
+               fill = "grey90", colour = "white") +
+  geom_point(data = shark_map,
+             aes(x = lon, y = lat, size = Shark, colour = Shark),
+             alpha = 0.7) +
+  scale_size_continuous(range = c(2, 12)) +
+  scale_colour_viridis_c() +
+  coord_fixed(xlim = c(140, 155), ylim = c(-30, -10)) +
+  labs(title = "Shark catches by area (2010)",
+       x = "Longitude", y = "Latitude",
+       size = "Sharks", colour = "Sharks") +
+  theme_minimal()
+```
+
+
+

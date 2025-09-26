@@ -10,17 +10,18 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 # Introduction
-In this report, I analyse shark catch data from the Queensland Shark Control Program (QFISH).  
-The dataset summarises the number of sharks caught by area and calendar year.  
-The aim of this analysis is to create a tidy dataset and produce a time-series plot that can be used for management and community reporting.
 
----
+Sharks sit at the top of marine food webs and have a major influence on how ecosystems function (Heupel et al., 2014). When their numbers are reduced, the effects ripple down through the system, sometimes leading to increases in mid-level predators and losses in prey diversity. At the same time, the presence of sharks has created tension with people, especially in coastal areas where swimming and surfing are common and the risk of attack is part of the public mindset.
+
+To address these concerns, Queensland launched the Shark Control Program (SCP) back in 1962. The program relies on nets and drumlines along busy beaches with the aim of lowering shark–human encounters (Queensland Government, 2024). It has been credited with reducing incidents, but the trade-off is substantial. Critics point to shark deaths and the unintended capture of turtles, dugongs, dolphins, and other species that are not the program’s targets (Sumpton et al., 2011; Gibbs & Warren, 2014).
+
+Catch data from the program are compiled in the QFISH database, maintained by the Department of Agriculture and Fisheries. This long-term record is a key resource for looking at how shark numbers have shifted over time and across regions. For the current project, we use records from 2001 through to 2025, focusing only on sharks. The dataset reports annual catches by region, which makes it possible to track trends over time and to compare how patterns differ between areas.
+
 
 # Part 1: Data acquisition
 - Data source: Queensland Government QFISH database  
-- Dataset selected: *Shark Control Program – Number caught by area, calendar year and species group*  
+- Dataset selected: *Shark Control Program – Number caught by area, calendar year and species group* (https://qfish.fisheries.qld.gov.au/query/number-caught-by-area-calendaryear-and-species-group/table#) 
 - Exported as CSV and stored in my repository under `data/`.
-
 
 
 ```{r}
@@ -30,14 +31,14 @@ library(tidyverse)
 
 ```{r}
 # Import the raw data
-raw_data <- read_csv("Data/Qfishdata.csv")
+raw_data <- read_csv("C:/Users/Ashwin/Desktop/Module 4/Module-4-data-analysis-/Data/Qfishdata.csv")
 
 ```
 
 
 Part 2: Tidy the data
 
-We focus only on shark records, with catches summarised by Area and Year.
+For this project we narrow it down to the shark data. The records are grouped by year and by region, so the catches can be looked at both over time and across different areas.
 
 ```{r}
 
@@ -81,7 +82,7 @@ head(shark_tidy)
 
 Part 3: Exploratory analysis and plotting
 
-We now develop a time-series plot showing shark catches over time, separated by region.
+The next step is to look at the data in a simple way. We put together a time-series plot of shark catches, with the records broken out by region so the changes through time are easier to see.
 
 ```{r}
 ggplot(shark_tidy, aes(x = Year, y = Shark, colour = Area)) +
@@ -97,7 +98,12 @@ ggplot(shark_tidy, aes(x = Year, y = Shark, colour = Area)) +
 
 ```
 
-For better visual comprehenssion I have decided to use R , to make geographical representation of the data for the year 2020 using the maps package .
+Figure 1. Time-series of shark catches across regions. This plot highlights both stable and fluctuating catch trends over time.
+
+
+Part 4: Spatial visualization
+
+For better visual comprehension I have decided to use R , to make geographical representation of the data for the year 2025 using the maps package .
 
 ```{r}
 
@@ -121,7 +127,7 @@ area_coords <- tribble(
 )
 
 # Filter shark data for a single year (e.g. 2020)
-shark2020 <- shark_tidy %>% filter(Year == 2020)
+shark2020 <- shark_tidy %>% filter(Year == 2025)
 
 # Merge shark catches with coordinates
 shark_map <- left_join(shark2020, area_coords, by = "Area")
@@ -139,41 +145,44 @@ ggplot() +
   scale_size_continuous(range = c(2, 12)) +
   scale_colour_viridis_c() +
   coord_fixed(xlim = c(140, 155), ylim = c(-30, -10)) +
-  labs(title = "Shark catches by area (2020)",
+  labs(title = "Shark catches by area (2025)",
        x = "Longitude", y = "Latitude",
        size = "Sharks", colour = "Sharks") +
   theme_minimal()
 
 ```
 
-```{r}
+Figure 2. Shark catches by region in 2025. Circle size and colour both represent the number of sharks caught, with larger, brighter circles indicating higher catches
+
+Results
+
+From 2001 to 2025 the number of sharks taken in the Queensland Shark Control Program shifted a lot across both years and regions. The time-series makes it clear that places like Mackay, the Capricorn Coast, and Townsville tended to record higher catches. In contrast, sites such as Bribie Island and North Stradbroke Island stayed much lower (Figure 1). Looking just at 2020 gives a snapshot of those differences, with central Queensland standing out as a hotspot (Figure 2). Put together, the patterns point to strong variation in shark mortality depending on where and when the data are viewed.
 
 
+Discussion
 
-# Filter shark data for a single year (e.g. 2020)
-shark2010 <- shark_tidy %>% filter(Year == 2010)
+Our findings point to marked variation in shark catches across Queensland SCP regions between 2001 and 2025. Central-coast sites such as Mackay, the Capricorn Coast, and Townsville stood out with consistently higher numbers, while several northern and southern locations showed far fewer captures. This fits well with earlier program records from Townsville, where large coastal species like tiger sharks (Galeocerdo cuvier) were frequently taken. In fact, 835 tiger sharks were recorded there between 1964 and 1986 (Simpfendorfer, 1992), which helps explain why the central GBR shelf continues to appear as a hotspot today.
 
-# Merge shark catches with coordinates
-shark_map <- left_join(shark2010, area_coords, by = "Area")
+Part of this regional contrast also comes down to the gear itself. Large-mesh nets and drumlines are known to favor medium to large sharks, with strong tendencies in the sizes, sexes, and species they retain (Sumpton et al., 2011). When more gear is concentrated near exposed beaches, catches naturally climb. The consistently high numbers we observed in the central coast line up closely with these known selectivity patterns and the way the SCP has been deployed.
 
-# Base world map from ggplot2
-world <- map_data("world")
+Changes through time are harder to generalize. Year-to-year swings in catch reflect shifts in abundance, movement, and even local behavior, and they don’t always match total shark numbers. For example, east-coast studies have shown that tiger shark catch rates have dropped over the years (Holmes et al., 2012). That means that looking only at raw totals can mask species-level dynamics, and future work should push toward species-specific analysis and standardized indices like CPUE.
+  
+References
 
-# Plot
-ggplot() +
-  geom_polygon(data = world, aes(x = long, y = lat, group = group),
-               fill = "grey90", colour = "white") +
-  geom_point(data = shark_map,
-             aes(x = lon, y = lat, size = Shark, colour = Shark),
-             alpha = 0.7) +
-  scale_size_continuous(range = c(2, 12)) +
-  scale_colour_viridis_c() +
-  coord_fixed(xlim = c(140, 155), ylim = c(-30, -10)) +
-  labs(title = "Shark catches by area (2010)",
-       x = "Longitude", y = "Latitude",
-       size = "Sharks", colour = "Sharks") +
-  theme_minimal()
-```
+Cortés, E., Grubbs, R. D., Zárate, P., & Arocha, F. (2010). Vulnerability of pelagic sharks to longline fishing in the Atlantic Ocean. Marine and Freshwater Research, 61(6), 658–669. https://doi.org/10.1071/MF09179
 
+Gibbs, L., & Warren, C. (2014). Transforming shark hazard management in Australia: Learning from oceanic whitetip conservation. Marine Policy, 46, 118–124. https://doi.org/10.1016/j.marpol.2014.01.017
 
+(Note: The “original work published 1995” reference to NSW meshing bycatch is not a formal APA citation; this is the updated peer-reviewed paper by the same authors.)
 
+Gribble, N. A., McPherson, G., & Lane, B. (2008). Effect of the Queensland Shark Control Program on non-target species: Whales, dugongs, turtles and dolphins. Queensland Department of Primary Industries and Fisheries. https://era.daf.qld.gov.au/id/eprint/7827/
+
+Holmes, B. J., Sumpton, W. D., Mayer, D. G., Tibbetts, I. R., Neil, D. T., & Bennett, M. B. (2012). Declining trends in annual catch rates of the tiger shark (Galeocerdo cuvier) on the east coast of Australia. Fisheries Research, 129–130, 38–45. https://doi.org/10.1016/j.fishres.2012.06.005
+
+Kyne, P. M., Carlson, J. K., Ebert, D. A., Fordham, S. V., Fowler, S. L., Pardo, S. A., Simpfendorfer, C. A., & Dulvy, N. K. (2021). The conservation status of global shark and ray fisheries. CSIRO/International Union for Conservation of Nature (IUCN). https://doi.org/10.25919/x9vr-vy93
+
+Simpfendorfer, C. A. (1992). Biology of tiger sharks (Galeocerdo cuvier) caught by the Queensland shark meshing program off Townsville, Australia. Australian Journal of Marine and Freshwater Research, 43(1), 33–43. https://doi.org/10.1071/MF9920033
+
+Sumpton, W. D., Taylor, S. M., Gribble, N. A., McPherson, G., & Ham, T. (2011). Gear selectivity of large-mesh nets and drumlines used to catch sharks in the Queensland Shark Control Program. African Journal of Marine Science, 33(1), 37–43. https://doi.org/10.2989/1814232X.2011.572335
+
+Sporre, M. K., Chapman, D. D., Feldheim, K. A., & Shivji, M. S. (2011). Trends in annual CPUE and evidence of sex and size segregation of scalloped hammerheads (Sphyrna lewini) in the northwestern Atlantic Ocean. Marine and Coastal Fisheries, 3(1), 169–181. https://doi.org/10.1080/19425120.2011.572346
